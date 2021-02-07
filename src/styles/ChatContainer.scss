@@ -3,6 +3,7 @@
     $other : #128c7e;
     $self : #00B2FF;
     $msgBorderWidth: 15px;
+    $topOptionColor: #00796b;
 
     display: flex;
     align-items: center;
@@ -120,8 +121,10 @@
                 border-bottom: 2px solid transparent;
             }
             .active{
-                color: #198754;
-                border-bottom: 2px solid #198754;
+                color: $topOptionColor;
+                border-bottom: 2px solid $topOptionColor;
+                // color: #198754;
+                // border-bottom: 2px solid #198754;
             }
         }
         .messages{

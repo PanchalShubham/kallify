@@ -126,7 +126,7 @@ export default function Homepage(props){
             <div className="content">
                 <div className="header">
                     <img src={Logo} alt="brand" className="brand" />
-                    Callify
+                    Kallify
                 </div>
                 <p className="subheader">
                     Connect instantly with your friends, family and community!

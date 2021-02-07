@@ -1,6 +1,10 @@
 const CONFIG = {
     SERVER_URL : 'http://localhost:8080',
     IP_ERROR : 'ip-error',
+    CONNECTION_TYPE_ERROR : 'connection-type-error',
+    CONNECTION_TYPE_MESSAGE : 'connection-type-message',
+    CONNECTION_TYPE_VIDEO_TRANSMITTER : 'connection-type-video-transmitter',
+    CONNECTION_TYPE_VIDEO_RECEIVER : 'connection-type-video-receiver',
     MAX_RECONNECTION_ATTEMPTS : 1,
     TIME_OUT : 'time-out',
     CONNECT : 'connect',
@@ -11,6 +15,7 @@ const CONFIG = {
     CREATE_ROOM_ERROR : 'create-room-error',
     JOIN_ROOM : 'join-room',
     JOINED : 'joined',
+    JOINED_ANOTHER_SESSION : 'joined-another-session',
     JOIN_ROOM_SUCCESS : 'join-room-success',
     JOIN_ROOM_ERROR : 'join-room-error',
     JOIN_ROOM_REQUEST : 'join-room-request' ,
@@ -25,6 +30,8 @@ const CONFIG = {
 
     MESSAGE : 'message',
     MESSAGE_ALL : 'message-all',
+    JOIN_VIDEO : 'join-video',
+    LEAVE_VIDEO : 'leave-video',
     VIDEO_FRAME : 'video-frame',
 };
 export default CONFIG;

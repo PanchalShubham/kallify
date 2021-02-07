@@ -18,6 +18,8 @@ export default function BaseContainer(props){
     const [loadingMessage, setLoadingMessage] = useState('');
     const [room, setRoom] = useState(null);
     const [socket, setSocket] = useState(null);
+    const [videoTransmitterSocket, setVideoTransmitterSocket] = useState(null);
+    const [videoReceiverSocket, setVideoReceiverSocket] = useState(null);
     const [connectionErrorCount, setConnectionErrorCount] = useState(0);
     const [messageList, setMessageList] = useState([]);
     const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -50,6 +52,8 @@ export default function BaseContainer(props){
             if (infoMessage)    flagInfo(infoMessage, autoDismiss);
             // if the room is left then so all requests
             if (newRoom === null) {
+                if (videoReceiverSocket)
+                    videoReceiverSocket.emit(CONFIG.LEAVE_VIDEO, meetingId);
                 // clear the meetingId
                 setMeetingId('');
                 // clear the message list
@@ -62,9 +66,10 @@ export default function BaseContainer(props){
             } else {
                 // update the meetingId
                 setMeetingId(newRoom.roomId);
-                // update the participants of the meeting!
+                if (videoReceiverSocket)
+                    videoReceiverSocket.emit(CONFIG.JOIN_VIDEO, newRoom.roomId);
             }
-    }, [room]);
+    }, [room, meetingId, videoReceiverSocket]);
 
     // manages the request
     const onHandlePendingRequest = useCallback((socketId, toastId, username, accept) => {
@@ -77,21 +82,6 @@ export default function BaseContainer(props){
         // accept the request
         socket.emit(decision, socketId, username);
     }, [socket]);
-
-    // used to capture the video frames
-    useEffect(() => {   
-        setVideoInterval(null);
-        if (!isVideo)   return;
-        let interval = setInterval(() => {
-            if (webcamRef.current) {
-                let {width, height} = window.screen;
-                const img = webcamRef.current.getScreenshot({width, height});
-                if (socket && socket.connected)
-                    socket.emit(CONFIG.VIDEO_FRAME, meetingId, socket.id, img);
-            }
-        }, 10);
-        setVideoInterval(interval);
-    }, [socket, isVideo, meetingId, webcamRef]);
     
     // used to fetch the client ip-address
     useEffect(function(){
@@ -103,27 +93,72 @@ export default function BaseContainer(props){
             let ip = response.ip;
             ip = new Date();
             console.log(ip);
-            // create socket
+            // create socket for messaging
             let mySocket = io(CONFIG.SERVER_URL, {
                 autoConnect: true,
                 forceNew: true,
                 reconnection: true,
                 reconnectionAttempts: CONFIG.MAX_RECONNECTION_ATTEMPTS,
-                query: {clientIp: ip}
+                query: {
+                    clientIp: ip,
+                    connectionType: CONFIG.CONNECTION_TYPE_MESSAGE
+                }
             });
+            // create socket for video transmitting
+            let myVideoTransmitterSocket = io(CONFIG.SERVER_URL, {
+                autoConnect: false,
+                forceNew: true,
+                reconnection: true,
+                reconnectionAttempts: CONFIG.MAX_RECONNECTION_ATTEMPTS,
+                query: {
+                    clientIp: ip,
+                    connectionType: CONFIG.CONNECTION_TYPE_VIDEO_TRANSMITTER
+                }
+            });            
+            // create socket for video receiving
+            let myVideoReceiverSocket = io(CONFIG.SERVER_URL, {
+                autoConnect: true,
+                forceNew: true,
+                reconnection: true,
+                reconnectionAttempts: CONFIG.MAX_RECONNECTION_ATTEMPTS,
+                query: {
+                    clientIp: ip,
+                    connectionType: CONFIG.CONNECTION_TYPE_VIDEO_RECEIVER
+                }
+            });            
             // update my socket
             setSocket(mySocket);
+            // update my video-socket
+            setVideoTransmitterSocket(myVideoTransmitterSocket);
+            setVideoReceiverSocket(myVideoReceiverSocket);
         }).catch(error => {
             console.log(error);
         });
     }, []);
 
+     // used to capture the video frames
+     useEffect(() => {   
+        setVideoInterval(null);
+        if (!isVideo)   return;
+        let interval = setInterval(() => {
+            if (webcamRef.current) {
+                let {width, height} = window.screen;
+                const img = webcamRef.current.getScreenshot({width, height});
+                if (videoTransmitterSocket && videoTransmitterSocket.connected){
+                    videoTransmitterSocket.emit(CONFIG.VIDEO_FRAME, meetingId, videoReceiverSocket.id, img);
+                }
+            }
+        }, 20);
+        setVideoInterval(interval);
+    }, [videoTransmitterSocket, videoReceiverSocket, isVideo, meetingId, webcamRef]);
+
     // add listeners to socket
     useEffect(function(){
         // check if socket instance is initialized
-        if (socket === null)    return;
+        if (socket === null)                return;
+        if (videoReceiverSocket === null)   return;
         // SERIOUSLY IMPORTANT!
-        socket.off();
+        socket.off(); videoReceiverSocket.off();
         // on a successful connection update the error count
         socket.on(CONFIG.CONNECT, () => {
             // reset the connection error count
@@ -157,6 +192,8 @@ export default function BaseContainer(props){
         });
         // for ip-error we reject the connection
         socket.on(CONFIG.IP_ERROR, flagError);
+        // for connection-type error
+        socket.on(CONFIG.CONNECTION_TYPE_ERROR, flagError);
         // meeting terminated because of timeout
         socket.on(CONFIG.TIME_OUT, (message) => updateRoomDetails(null, null, message));
 
@@ -171,6 +208,8 @@ export default function BaseContainer(props){
         socket.on(CONFIG.JOIN_ROOM_SUCCESS, updateRoomDetails);
         // on failure - reject the promise
         socket.on(CONFIG.JOIN_ROOM_ERROR, (error) => updateRoomDetails(null, error));
+        // if admin has joined via another session then disconnect this session
+        socket.on(CONFIG.JOINED_ANOTHER_SESSION, () => updateRoomDetails(null));
         // join request
         socket.on(CONFIG.JOIN_ROOM_REQUEST, (socketId, username) => {
             // generate a toastId
@@ -187,7 +226,11 @@ export default function BaseContainer(props){
         // waiting event
         socket.on(CONFIG.WAIT_FOR_APPROVAL, (message) => setLoadingMessage(message));
         // request to join approved
-        socket.on(CONFIG.REQUEST_APPROVED, updateRoomDetails);
+        socket.on(CONFIG.REQUEST_APPROVED, (room) => {
+            // update the details of the room
+            updateRoomDetails(room);
+            // connect the video-socket
+        });
         // request to join rejected
         socket.on(CONFIG.REQUEST_REJECTED, (error) => updateRoomDetails(null, error));
         // inform user about other's joining
@@ -206,10 +249,11 @@ export default function BaseContainer(props){
             div.scrollTop = div.scrollHeight;
         });
         // update video frame of client
-        socket.on(CONFIG.VIDEO_FRAME, (socketId, img) => {
+        videoReceiverSocket.on(CONFIG.VIDEO_FRAME, (socketId, img) => {
+            console.log('received video!');
             setImgSrc(img);
         });
-    }, [socket, updateRoomDetails,
+    }, [socket, videoReceiverSocket, updateRoomDetails,
         connectionErrorCount, messageList,
         onHandlePendingRequest, showChat,
         unreadMessageCount,
@@ -257,6 +301,11 @@ export default function BaseContainer(props){
             clearInterval(videoInterval);
             // clear the client image
             setImgSrc(null);
+            // disconnect the video-socket
+            videoTransmitterSocket.disconnect();
+        } else {
+            // video is turned on - connect video socket
+            videoTransmitterSocket.connect();
         }
     };
 
@@ -285,7 +334,7 @@ export default function BaseContainer(props){
 
 
     // set the title of the application
-    document.title = "Callify | Connect instantly with your friends, family and community!";
+    document.title = "Kallify | Connect instantly with your friends, family and community!";
     let socketId = (socket !== null ? socket.id : null);
     let people = (room !== null ? room.people : []);
     return (
