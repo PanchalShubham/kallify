@@ -1,0 +1,192 @@
+#chat-container{
+    // variables
+    $other : #128c7e;
+    $self : #00B2FF;
+    $msgBorderWidth: 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    > div{
+        height: 100vh;
+    }
+    .video-frame{
+        flex: 1;
+        background-color: black;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+        img{
+            width: 100%;
+        }
+        .meeting-info{
+            position: absolute;
+            top: 0px;
+            text-align: center;
+            margin: 10px auto;
+        }
+        .video-controls{
+            position: absolute;
+            margin-bottom: 10px;
+            bottom: 0px;
+            background-color: white;
+            // display: none;
+            color: black;
+            text-align: center;
+            .button{
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                outline: none;
+                border: none;
+                margin: 10px;
+                cursor: pointer;
+                font-size: 20px;
+                background: white;
+                color: #5f6368;
+            }
+            .button:hover{
+                box-shadow: 1px 1px 10px gray;
+            }
+            .success{
+                background-color: #198754;
+                color: white;
+            }
+            .unread-message-count{
+                position: absolute;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                top: 5px;
+                right: 5px;
+                width: 15px;
+                height: 15px;
+                border-radius: 50%;
+                background-color: #cff4fc;
+                color: black;
+                font-size: 10px;
+                padding: 5px;
+            }
+            .end-call:hover, .clicked{
+                background: red;
+                color: white;
+                box-shadow: none !important;
+            }
+            .meetingId{
+                padding: 5px;
+                border-top: 1px solid gray;
+            }
+        }
+    }
+    .video-frame:hover{
+        .video-controls{
+            display: block;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+    .chat-frame{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 300px !important;
+        overflow: hidden;
+        > div{
+            width: 100%;
+        }        
+        .self-video{
+            img{
+                width: 100%;
+            }
+        }
+        .people-chat{
+            display: flex;
+            align-items: center;
+            justify-content: space-evenly;
+            padding: 10px;
+            > button {
+                background: transparent;
+                border: none;
+                font-size: 20px;
+                color: #5f6368;
+                padding-bottom: 5px;
+                cursor: pointer;
+                border-bottom: 2px solid transparent;
+            }
+            .active{
+                color: #198754;
+                border-bottom: 2px solid #198754;
+            }
+        }
+        .messages{
+            flex: 1;
+            overflow: scroll;
+            .message{
+                margin: 5px;
+                color: white;
+                word-break: break-all;
+                font-size: 15px;
+                .author{
+                    font-weight: bold;
+                    span{
+                        margin-left: 5px;
+                        font-size: 12px;
+                        font-weight: normal;
+                    }
+                }
+                .arrow-container{
+                    position: relative;
+                    top: 2*$msgBorderWidth;
+                    margin-top: -2*$msgBorderWidth;
+                    display: flex;
+                    align-items: center;
+                    .arrow{
+                        right: 0px;
+                        width: 0px;
+                        height: 0px;
+                        border: $msgBorderWidth solid;
+                    }
+                    .left-arrow{
+                        border-color: $other transparent transparent transparent;                    
+                    }
+                    .right-arrow{
+                        border-color: $self transparent transparent transparent;                    
+                    }
+                }
+                .left-align{
+                    justify-content: flex-start;
+                }
+                .right-align{
+                    justify-content: flex-end;
+                }
+                .message-body{
+                    padding: 10px;
+                    // border-radius: 10px;
+                }
+            }
+            .other{
+                background-color: $other;
+                margin-left: $msgBorderWidth;
+            }
+            .self{
+                background-color: $self;
+                margin-right: $msgBorderWidth;
+            }
+            .member{
+                margin: 5px;
+                padding: 10px;
+                border: 1px solid black;
+                border-radius: 10px;
+                > div{
+                    font-weight: bold;
+                }
+            }
+        }
+    }
+}

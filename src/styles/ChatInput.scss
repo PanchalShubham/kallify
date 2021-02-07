@@ -1,0 +1,29 @@
+.chat-input{
+    .fields{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        #chat-input{
+            flex: 1;
+            margin: 5px;
+            border: 1px solid black;
+            border-radius: 10px;
+            padding: 10px;
+            max-width: 200px;
+        }
+        button{
+            width: 30px;
+            height: 30px;
+            font-size: 25px;
+            color: #00796b;
+            background: transparent;
+            border: none;
+            outline: none;
+            margin: 5px;
+            cursor: pointer;
+        }
+    }
+    .emoji-picker-react{
+        width: 100% !important;
+    }
+}

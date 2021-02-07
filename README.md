@@ -1,2 +1,2 @@
 # kallify
-This repository hosts kallify project!
+This repository hosts the kallify project
